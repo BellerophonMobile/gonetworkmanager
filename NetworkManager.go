@@ -1,6 +1,8 @@
 package gonetworkmanager
 
 import (
+	"encoding/json"
+
 	"github.com/godbus/dbus"
 )
 
@@ -21,6 +23,11 @@ type NetworkManager interface {
 	// NetworkManager daemon, based on the state of network devices under it's
 	// management.
 	GetState() NmState
+
+	Subscribe() <-chan *dbus.Signal
+	Unsubscribe()
+
+	MarshalJSON() ([]byte, error)
 }
 
 func NewNetworkManager() (NetworkManager, error) {
@@ -30,6 +37,8 @@ func NewNetworkManager() (NetworkManager, error) {
 
 type networkManager struct {
 	dbusBase
+
+	sigChan chan *dbus.Signal
 }
 
 func (n *networkManager) GetDevices() []Device {
@@ -51,4 +60,28 @@ func (n *networkManager) GetDevices() []Device {
 
 func (n *networkManager) GetState() NmState {
 	return NmState(n.getUint32Property(NetworkManagerPropertyState))
+}
+
+func (n *networkManager) Subscribe() <-chan *dbus.Signal {
+	if n.sigChan != nil {
+		return n.sigChan
+	}
+
+	n.subscribeNamespace(NetworkManagerObjectPath)
+	n.sigChan = make(chan *dbus.Signal, 10)
+	n.conn.Signal(n.sigChan)
+
+	return n.sigChan
+}
+
+func (n *networkManager) Unsubscribe() {
+	n.conn.RemoveSignal(n.sigChan)
+	n.sigChan = nil
+}
+
+func (n *networkManager) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"NetworkState": n.GetState().String(),
+		"Devices":      n.GetDevices(),
+	})
 }

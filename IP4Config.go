@@ -1,6 +1,8 @@
 package gonetworkmanager
 
 import (
+	"encoding/json"
+
 	"github.com/godbus/dbus"
 )
 
@@ -44,6 +46,8 @@ type IP4Config interface {
 
 	// GetDomains gets a list of domains this address belongs to.
 	GetDomains() []string
+
+	MarshalJSON() ([]byte, error)
 }
 
 func NewIP4Config(objectPath dbus.ObjectPath) (IP4Config, error) {
@@ -99,4 +103,13 @@ func (c *ip4Config) GetNameservers() []string {
 
 func (c *ip4Config) GetDomains() []string {
 	return c.getSliceStringProperty(IP4ConfigPropertyDomains)
+}
+
+func (c *ip4Config) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"Addresses":   c.GetAddresses(),
+		"Routes":      c.GetRoutes(),
+		"Nameservers": c.GetNameservers(),
+		"Domains":     c.GetDomains(),
+	})
 }

@@ -1,6 +1,8 @@
 package gonetworkmanager
 
 import (
+	"encoding/json"
+
 	"github.com/godbus/dbus"
 )
 
@@ -44,4 +46,10 @@ func (d *wirelessDevice) GetAccessPoints() []AccessPoint {
 	}
 
 	return aps
+}
+
+func (d *wirelessDevice) MarshalJSON() ([]byte, error) {
+	m := d.device.marshalMap()
+	m["AccessPoints"] = d.GetAccessPoints()
+	return json.Marshal(m)
 }

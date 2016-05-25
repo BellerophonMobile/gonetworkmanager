@@ -1,6 +1,8 @@
 package gonetworkmanager
 
 import (
+	"encoding/json"
+
 	"github.com/godbus/dbus"
 )
 
@@ -19,6 +21,8 @@ type Connection interface {
 	// network, as those are often protected. Secrets must be requested
 	// separately using the GetSecrets() call.
 	GetSettings() ConnectionSettings
+
+	MarshalJSON() ([]byte, error)
 }
 
 func NewConnection(objectPath dbus.ObjectPath) (Connection, error) {
@@ -45,4 +49,8 @@ func (c *connection) GetSettings() ConnectionSettings {
 	}
 
 	return rv
+}
+
+func (c *connection) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.GetSettings())
 }

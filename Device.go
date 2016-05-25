@@ -1,6 +1,8 @@
 package gonetworkmanager
 
 import (
+	"encoding/json"
+
 	"github.com/godbus/dbus"
 )
 
@@ -48,6 +50,8 @@ type Device interface {
 	// GetAvailableConnections gets an array of object paths of every configured
 	// connection that is currently 'available' through this device.
 	GetAvailableConnections() []Connection
+
+	MarshalJSON() ([]byte, error)
 }
 
 func NewDevice(objectPath dbus.ObjectPath) (Device, error) {
@@ -98,4 +102,18 @@ func (d *device) GetAvailableConnections() []Connection {
 	}
 
 	return conns
+}
+
+func (d *device) marshalMap() map[string]interface{} {
+	return map[string]interface{}{
+		"Interface":            d.GetInterface(),
+		"State":                d.GetState().String(),
+		"IP4Config":            d.GetIP4Config(),
+		"DeviceType":           d.GetDeviceType().String(),
+		"AvailableConnections": d.GetAvailableConnections(),
+	}
+}
+
+func (d *device) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.marshalMap())
 }
