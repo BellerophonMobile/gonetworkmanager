@@ -92,6 +92,14 @@ func (d *dbusBase) getSliceStringProperty(iface string) []string {
 	return value
 }
 
+func (d *dbusBase) getMapStringVariantProperty(iface string) map[string]dbus.Variant {
+	value, ok := d.getProperty(iface).(map[string]dbus.Variant)
+	if !ok {
+		panic(makeErrVariantType(iface))
+	}
+	return value
+}
+
 func (d *dbusBase) getUint8Property(iface string) uint8 {
 	value, ok := d.getProperty(iface).(uint8)
 	if !ok {

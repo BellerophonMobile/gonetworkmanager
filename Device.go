@@ -14,6 +14,7 @@ const (
 	DevicePropertyIP4Config            = DeviceInterface + ".Ip4Config"
 	DevicePropertyDeviceType           = DeviceInterface + ".DeviceType"
 	DevicePropertyAvailableConnections = DeviceInterface + ".AvailableConnections"
+	DevicePropertyDhcp4Config          = DeviceInterface + ".Dhcp4Config"
 )
 
 func DeviceFactory(objectPath dbus.ObjectPath) (Device, error) {
@@ -42,6 +43,11 @@ type Device interface {
 	// device. Only valid when the device is in the NM_DEVICE_STATE_ACTIVATED
 	// state.
 	GetIP4Config() IP4Config
+
+	// GetDHCP4Config gets the Dhcp4Config object describing the configuration of the
+	// device. Only valid when the device is in the NM_DEVICE_STATE_ACTIVATED
+	// state.
+	GetDHCP4Config() DHCP4Config
 
 	// GetDeviceType gets the general type of the network device; ie Ethernet,
 	// WiFi, etc.
@@ -85,6 +91,20 @@ func (d *device) GetIP4Config() IP4Config {
 	return cfg
 }
 
+func (d *device) GetDHCP4Config() DHCP4Config {
+	path := d.getObjectProperty(DevicePropertyDhcp4Config)
+	if path == "/" {
+		return nil
+	}
+
+	cfg, err := NewDHCP4Config(path)
+	if err != nil {
+		panic(err)
+	}
+
+	return cfg
+}
+
 func (d *device) GetDeviceType() NmDeviceType {
 	return NmDeviceType(d.getUint32Property(DevicePropertyDeviceType))
 }
@@ -109,6 +129,7 @@ func (d *device) marshalMap() map[string]interface{} {
 		"Interface":            d.GetInterface(),
 		"State":                d.GetState().String(),
 		"IP4Config":            d.GetIP4Config(),
+		"DHCP4Config":          d.GetDHCP4Config(),
 		"DeviceType":           d.GetDeviceType().String(),
 		"AvailableConnections": d.GetAvailableConnections(),
 	}
