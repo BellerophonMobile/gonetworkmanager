@@ -10,6 +10,7 @@ const (
 	DeviceInterface = NetworkManagerInterface + ".Device"
 
 	DevicePropertyInterface            = DeviceInterface + ".Interface"
+	DevicePropertyIpInterface          = DeviceInterface + ".IpInterface"
 	DevicePropertyState                = DeviceInterface + ".State"
 	DevicePropertyIP4Config            = DeviceInterface + ".Ip4Config"
 	DevicePropertyDeviceType           = DeviceInterface + ".DeviceType"
@@ -35,6 +36,9 @@ type Device interface {
 	// GetInterface gets the name of the device's control (and often data)
 	// interface.
 	GetInterface() string
+
+	// GetIpInterface gets the IP interface name of the device.
+	GetIpInterface() string
 
 	// GetState gets the current state of the device.
 	GetState() NmDeviceState
@@ -71,6 +75,10 @@ type device struct {
 
 func (d *device) GetInterface() string {
 	return d.getStringProperty(DevicePropertyInterface)
+}
+
+func (d *device) GetIpInterface() string {
+	return d.getStringProperty(DevicePropertyIpInterface)
 }
 
 func (d *device) GetState() NmDeviceState {
@@ -127,6 +135,7 @@ func (d *device) GetAvailableConnections() []Connection {
 func (d *device) marshalMap() map[string]interface{} {
 	return map[string]interface{}{
 		"Interface":            d.GetInterface(),
+		"IP interface":         d.GetIpInterface(),
 		"State":                d.GetState().String(),
 		"IP4Config":            d.GetIP4Config(),
 		"DHCP4Config":          d.GetDHCP4Config(),
