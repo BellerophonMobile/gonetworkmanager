@@ -10,8 +10,9 @@ const (
 	NetworkManagerInterface  = "org.freedesktop.NetworkManager"
 	NetworkManagerObjectPath = "/org/freedesktop/NetworkManager"
 
-	NetworkManagerGetDevices    = NetworkManagerInterface + ".GetDevices"
-	NetworkManagerPropertyState = NetworkManagerInterface + ".state"
+	NetworkManagerGetDevices               = NetworkManagerInterface + ".GetDevices"
+	NetworkManagerPropertyState            = NetworkManagerInterface + ".State"
+	NetworkManagerPropertyActiveConnection = NetworkManagerInterface + ".ActiveConnections"
 )
 
 type NetworkManager interface {
@@ -23,6 +24,8 @@ type NetworkManager interface {
 	// NetworkManager daemon, based on the state of network devices under it's
 	// management.
 	GetState() NmState
+
+	GetActiveConnections() []ActiveConnection
 
 	Subscribe() <-chan *dbus.Signal
 	Unsubscribe()
@@ -60,6 +63,21 @@ func (n *networkManager) GetDevices() []Device {
 
 func (n *networkManager) GetState() NmState {
 	return NmState(n.getUint32Property(NetworkManagerPropertyState))
+}
+
+func (n *networkManager) GetActiveConnections() []ActiveConnection {
+	acPaths := n.getSliceObjectProperty(NetworkManagerPropertyActiveConnection)
+	ac := make([]ActiveConnection, len(acPaths))
+
+	var err error
+	for i, path := range acPaths {
+		ac[i], err = NewActiveConnection(path)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return ac
 }
 
 func (n *networkManager) Subscribe() <-chan *dbus.Signal {
