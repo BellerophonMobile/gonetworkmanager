@@ -11,6 +11,7 @@ const (
 	NetworkManagerObjectPath = "/org/freedesktop/NetworkManager"
 
 	NetworkManagerGetDevices               = NetworkManagerInterface + ".GetDevices"
+	NetworkManagerActivateConnection       = NetworkManagerInterface + ".ActivateConnection"
 	NetworkManagerPropertyState            = NetworkManagerInterface + ".State"
 	NetworkManagerPropertyActiveConnection = NetworkManagerInterface + ".ActiveConnections"
 )
@@ -25,7 +26,11 @@ type NetworkManager interface {
 	// management.
 	GetState() NmState
 
+	// GetActiveConnections returns the active connection of network devices.
 	GetActiveConnections() []ActiveConnection
+
+	// ActivateWirelessConnection requests activating access point to network device
+	ActivateWirelessConnection(connection Connection, device Device, accessPoint AccessPoint) ActiveConnection
 
 	Subscribe() <-chan *dbus.Signal
 	Unsubscribe()
@@ -78,6 +83,12 @@ func (n *networkManager) GetActiveConnections() []ActiveConnection {
 	}
 
 	return ac
+}
+
+func (n *networkManager) ActivateWirelessConnection(c Connection, d Device, ap AccessPoint) ActiveConnection {
+	var opath dbus.ObjectPath
+	n.call(&opath, NetworkManagerActivateConnection, c.GetPath(), d.GetPath(), ap.GetPath())
+	return nil
 }
 
 func (n *networkManager) Subscribe() <-chan *dbus.Signal {

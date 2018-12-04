@@ -21,6 +21,8 @@ const (
 )
 
 type AccessPoint interface {
+	GetPath() dbus.ObjectPath
+
 	// GetFlags gets flags describing the capabilities of the access point.
 	GetFlags() uint32
 
@@ -63,6 +65,10 @@ func NewAccessPoint(objectPath dbus.ObjectPath) (AccessPoint, error) {
 
 type accessPoint struct {
 	dbusBase
+}
+
+func (a *accessPoint) GetPath() dbus.ObjectPath {
+	return a.obj.Path()
 }
 
 func (a *accessPoint) GetFlags() uint32 {

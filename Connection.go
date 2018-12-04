@@ -16,6 +16,8 @@ const (
 type ConnectionSettings map[string]map[string]interface{}
 
 type Connection interface {
+	GetPath() dbus.ObjectPath
+
 	// GetSettings gets the settings maps describing this network configuration.
 	// This will never include any secrets required for connection to the
 	// network, as those are often protected. Secrets must be requested
@@ -32,6 +34,10 @@ func NewConnection(objectPath dbus.ObjectPath) (Connection, error) {
 
 type connection struct {
 	dbusBase
+}
+
+func (c *connection) GetPath() dbus.ObjectPath {
+	return c.obj.Path()
 }
 
 func (c *connection) GetSettings() ConnectionSettings {

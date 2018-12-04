@@ -33,6 +33,8 @@ func DeviceFactory(objectPath dbus.ObjectPath) (Device, error) {
 }
 
 type Device interface {
+	GetPath() dbus.ObjectPath
+
 	// GetInterface gets the name of the device's control (and often data)
 	// interface.
 	GetInterface() string
@@ -71,6 +73,10 @@ func NewDevice(objectPath dbus.ObjectPath) (Device, error) {
 
 type device struct {
 	dbusBase
+}
+
+func (d *device) GetPath() dbus.ObjectPath {
+	return d.obj.Path()
 }
 
 func (d *device) GetInterface() string {
