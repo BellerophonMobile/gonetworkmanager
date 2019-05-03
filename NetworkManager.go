@@ -12,6 +12,7 @@ const (
 
 	NetworkManagerGetDevices               = NetworkManagerInterface + ".GetDevices"
 	NetworkManagerActivateConnection       = NetworkManagerInterface + ".ActivateConnection"
+	NetworkManagerAddAndActivateConnection = NetworkManagerInterface + ".AddAndActivateConnection"
 	NetworkManagerPropertyState            = NetworkManagerInterface + ".State"
 	NetworkManagerPropertyActiveConnection = NetworkManagerInterface + ".ActiveConnections"
 )
@@ -31,6 +32,8 @@ type NetworkManager interface {
 
 	// ActivateWirelessConnection requests activating access point to network device
 	ActivateWirelessConnection(connection Connection, device Device, accessPoint AccessPoint) ActiveConnection
+
+	AddAndActivateWirelessConnection(connection map[string]map[string]interface{}, device Device, accessPoint AccessPoint) ActiveConnection
 
 	Subscribe() <-chan *dbus.Signal
 	Unsubscribe()
@@ -88,6 +91,12 @@ func (n *networkManager) GetActiveConnections() []ActiveConnection {
 func (n *networkManager) ActivateWirelessConnection(c Connection, d Device, ap AccessPoint) ActiveConnection {
 	var opath dbus.ObjectPath
 	n.call(&opath, NetworkManagerActivateConnection, c.GetPath(), d.GetPath(), ap.GetPath())
+	return nil
+}
+
+func (n *networkManager) AddAndActivateWirelessConnection(connection map[string]map[string]interface{}, d Device, ap AccessPoint) ActiveConnection {
+	var opath dbus.ObjectPath
+	n.call(&opath, NetworkManagerAddAndActivateConnection, connection, d.GetPath(), ap.GetPath())
 	return nil
 }
 
