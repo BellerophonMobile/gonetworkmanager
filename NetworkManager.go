@@ -2,6 +2,8 @@ package gonetworkmanager
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 
 	"github.com/godbus/dbus"
 )
@@ -33,7 +35,17 @@ type NetworkManager interface {
 	// ActivateWirelessConnection requests activating access point to network device
 	ActivateWirelessConnection(connection Connection, device Device, accessPoint AccessPoint) ActiveConnection
 
-	AddAndActivateWirelessConnection(connection map[string]map[string]interface{}, device Device, accessPoint AccessPoint) ActiveConnection
+	// AddAndActivateWirelessConnection adds a new connection profile to the network device it has been
+	// passed. It then activates the connection to the passed access point. The first paramter contains
+	// additional information for the connection (most propably the credentials).
+	// Example contents for connection are:
+	// connection := make(map[string]map[string]interface{})
+	// connection["802-11-wireless"] = make(map[string]interface{})
+	// connection["802-11-wireless"]["security"] = "802-11-wireless-security"
+	// connection["802-11-wireless-security"] = make(map[string]interface{})
+	// connection["802-11-wireless-security"]["key-mgmt"] = "wpa-psk"
+	// connection["802-11-wireless-security"]["psk"] = password
+	AddAndActivateWirelessConnection(connection map[string]map[string]interface{}, device Device, accessPoint AccessPoint) (ac ActiveConnection, err error)
 
 	Subscribe() <-chan *dbus.Signal
 	Unsubscribe()
@@ -94,10 +106,25 @@ func (n *networkManager) ActivateWirelessConnection(c Connection, d Device, ap A
 	return nil
 }
 
-func (n *networkManager) AddAndActivateWirelessConnection(connection map[string]map[string]interface{}, d Device, ap AccessPoint) ActiveConnection {
-	var opath dbus.ObjectPath
-	n.call(&opath, NetworkManagerAddAndActivateConnection, connection, d.GetPath(), ap.GetPath())
-	return nil
+func (n *networkManager) AddAndActivateWirelessConnection(connection map[string]map[string]interface{}, d Device, ap AccessPoint) (ac ActiveConnection, err error) {
+	var opath1 dbus.ObjectPath
+	var opath2 dbus.ObjectPath
+	defer func() {
+		if r := recover(); r != nil {
+			ap = nil
+			err = errors.New("panic in " + NetworkManagerAddAndActivateConnection + ": " + fmt.Sprint(r))
+		}
+	}()
+	err = n.callError2(&opath1, &opath2, NetworkManagerAddAndActivateConnection, connection, d.GetPath(), ap.GetPath())
+	if err != nil {
+		return
+	}
+
+	ac, err = NewActiveConnection(opath2)
+	if err != nil {
+		return
+	}
+	return
 }
 
 func (n *networkManager) Subscribe() <-chan *dbus.Signal {
