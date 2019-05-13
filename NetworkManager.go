@@ -2,8 +2,6 @@ package gonetworkmanager
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 
 	"github.com/godbus/dbus"
 )
@@ -109,12 +107,7 @@ func (n *networkManager) ActivateWirelessConnection(c Connection, d Device, ap A
 func (n *networkManager) AddAndActivateWirelessConnection(connection map[string]map[string]interface{}, d Device, ap AccessPoint) (ac ActiveConnection, err error) {
 	var opath1 dbus.ObjectPath
 	var opath2 dbus.ObjectPath
-	defer func() {
-		if r := recover(); r != nil {
-			ap = nil
-			err = errors.New("panic in " + NetworkManagerAddAndActivateConnection + ": " + fmt.Sprint(r))
-		}
-	}()
+
 	err = n.callError2(&opath1, &opath2, NetworkManagerAddAndActivateConnection, connection, d.GetPath(), ap.GetPath())
 	if err != nil {
 		return
