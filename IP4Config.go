@@ -32,20 +32,20 @@ type IP4Config interface {
 	// GetAddresses gets an array of tuples of IPv4 address/prefix/gateway. All 3
 	// elements of each tuple are in network byte order. Essentially: [(addr,
 	// prefix, gateway), (addr, prefix, gateway), ...]
-	GetAddresses() []IP4Address
+	GetAddresses() ([]IP4Address, error)
 
 	// GetRoutes gets tuples of IPv4 route/prefix/next-hop/metric. All 4 elements
 	// of each tuple are in network byte order. 'route' and 'next hop' are IPv4
 	// addresses, while prefix and metric are simple unsigned integers.
 	// Essentially: [(route, prefix, next-hop, metric), (route, prefix, next-hop,
 	// metric), ...]
-	GetRoutes() []IP4Route
+	GetRoutes() ([]IP4Route, error)
 
 	// GetNameservers gets the nameservers in use.
-	GetNameservers() []string
+	GetNameservers() ([]string, error)
 
 	// GetDomains gets a list of domains this address belongs to.
-	GetDomains() []string
+	GetDomains() ([]string, error)
 
 	MarshalJSON() ([]byte, error)
 }
@@ -59,8 +59,11 @@ type ip4Config struct {
 	dbusBase
 }
 
-func (c *ip4Config) GetAddresses() []IP4Address {
-	addresses := c.getSliceSliceUint32Property(IP4ConfigPropertyAddresses)
+func (c *ip4Config) GetAddresses() ([]IP4Address, error) {
+	addresses, err := c.getSliceSliceUint32Property(IP4ConfigPropertyAddresses)
+	if err != nil {
+		return nil, err
+	}
 	ret := make([]IP4Address, len(addresses))
 
 	for i, parts := range addresses {
@@ -71,11 +74,14 @@ func (c *ip4Config) GetAddresses() []IP4Address {
 		}
 	}
 
-	return ret
+	return ret, nil
 }
 
-func (c *ip4Config) GetRoutes() []IP4Route {
-	routes := c.getSliceSliceUint32Property(IP4ConfigPropertyRoutes)
+func (c *ip4Config) GetRoutes() ([]IP4Route, error) {
+	routes, err := c.getSliceSliceUint32Property(IP4ConfigPropertyRoutes)
+	if err != nil {
+		return nil, err
+	}
 	ret := make([]IP4Route, len(routes))
 
 	for i, parts := range routes {
@@ -87,29 +93,49 @@ func (c *ip4Config) GetRoutes() []IP4Route {
 		}
 	}
 
-	return ret
+	return ret, nil
 }
 
-func (c *ip4Config) GetNameservers() []string {
-	nameservers := c.getSliceUint32Property(IP4ConfigPropertyNameservers)
+func (c *ip4Config) GetNameservers() ([]string, error) {
+	nameservers, err := c.getSliceUint32Property(IP4ConfigPropertyNameservers)
+	if err != nil {
+		return nil, err
+	}
 	ret := make([]string, len(nameservers))
 
 	for i, ns := range nameservers {
 		ret[i] = ip4ToString(ns)
 	}
 
-	return ret
+	return ret, nil
 }
 
-func (c *ip4Config) GetDomains() []string {
+func (c *ip4Config) GetDomains() ([]string, error) {
 	return c.getSliceStringProperty(IP4ConfigPropertyDomains)
 }
 
 func (c *ip4Config) MarshalJSON() ([]byte, error) {
+	Addresses, err := c.GetAddresses()
+	if err != nil {
+		return nil, err
+	}
+	Routes, err := c.GetRoutes()
+	if err != nil {
+		return nil, err
+	}
+	Nameservers, err := c.GetNameservers()
+	if err != nil {
+		return nil, err
+	}
+	Domains, err := c.GetDomains()
+	if err != nil {
+		return nil, err
+	}
+
 	return json.Marshal(map[string]interface{}{
-		"Addresses":   c.GetAddresses(),
-		"Routes":      c.GetRoutes(),
-		"Nameservers": c.GetNameservers(),
-		"Domains":     c.GetDomains(),
+		"Addresses":   Addresses,
+		"Routes":      Routes,
+		"Nameservers": Nameservers,
+		"Domains":     Domains,
 	})
 }

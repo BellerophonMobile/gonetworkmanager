@@ -20,9 +20,9 @@ type WirelessDevice interface {
 	// Note that this list does not include access points which hide their SSID.
 	// To retrieve a list of all access points (including hidden ones) use the
 	// GetAllAccessPoints() method.
-	GetAccessPoints() []AccessPoint
+	GetAccessPoints() ([]AccessPoint, error)
 
-	RequestScan()
+	RequestScan() error
 }
 
 func NewWirelessDevice(objectPath dbus.ObjectPath) (WirelessDevice, error) {
@@ -34,30 +34,39 @@ type wirelessDevice struct {
 	device
 }
 
-func (d *wirelessDevice) GetAccessPoints() []AccessPoint {
+func (d *wirelessDevice) GetAccessPoints() ([]AccessPoint, error) {
 	var apPaths []dbus.ObjectPath
 
-	d.call(&apPaths, WirelessDeviceGetAccessPoints)
+	err := d.call(&apPaths, WirelessDeviceGetAccessPoints)
+	if err != nil {
+		return nil, err
+	}
 	aps := make([]AccessPoint, len(apPaths))
 
-	var err error
 	for i, path := range apPaths {
 		aps[i], err = NewAccessPoint(path)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 
-	return aps
+	return aps, nil
 }
 
-func (d *wirelessDevice) RequestScan() {
+func (d *wirelessDevice) RequestScan() error {
 	var options map[string]interface{}
-	d.obj.Call(WirelessDeviceRequestScan, 0, options).Store()
+	return d.obj.Call(WirelessDeviceRequestScan, 0, options).Store()
 }
 
 func (d *wirelessDevice) MarshalJSON() ([]byte, error) {
-	m := d.device.marshalMap()
-	m["AccessPoints"] = d.GetAccessPoints()
+	m, err := d.device.marshalMap()
+	if err != nil {
+		return nil, err
+	}
+	aps, err := d.GetAccessPoints()
+	if err != nil {
+		return nil, err
+	}
+	m["AccessPoints"] = aps
 	return json.Marshal(m)
 }

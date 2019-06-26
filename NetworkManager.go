@@ -20,18 +20,30 @@ const (
 type NetworkManager interface {
 
 	// GetDevices gets the list of network devices.
-	GetDevices() []Device
+	GetDevices() ([]Device, error)
 
 	// GetState returns the overall networking state as determined by the
 	// NetworkManager daemon, based on the state of network devices under it's
 	// management.
-	GetState() NmState
+	GetState() (NmState, error)
 
 	// GetActiveConnections returns the active connection of network devices.
-	GetActiveConnections() []ActiveConnection
+	GetActiveConnections() ([]ActiveConnection, error)
 
 	// ActivateWirelessConnection requests activating access point to network device
-	ActivateWirelessConnection(connection Connection, device Device, accessPoint AccessPoint) ActiveConnection
+	ActivateWirelessConnection(connection Connection, device Device, accessPoint AccessPoint) (ActiveConnection, error)
+
+	// AddAndActivateWirelessConnection adds a new connection profile to the network device it has been
+	// passed. It then activates the connection to the passed access point. The first paramter contains
+	// additional information for the connection (most propably the credentials).
+	// Example contents for connection are:
+	// connection := make(map[string]map[string]interface{})
+	// connection["802-11-wireless"] = make(map[string]interface{})
+	// connection["802-11-wireless"]["security"] = "802-11-wireless-security"
+	// connection["802-11-wireless-security"] = make(map[string]interface{})
+	// connection["802-11-wireless-security"]["key-mgmt"] = "wpa-psk"
+	// connection["802-11-wireless-security"]["psk"] = password
+	AddAndActivateWirelessConnection(connection map[string]map[string]interface{}, device Device, accessPoint AccessPoint) (ac ActiveConnection, err error)
 
 	// AddAndActivateWirelessConnection adds a new connection profile to the network device it has been
 	// passed. It then activates the connection to the passed access point. The first paramter contains
@@ -62,46 +74,69 @@ type networkManager struct {
 	sigChan chan *dbus.Signal
 }
 
-func (n *networkManager) GetDevices() []Device {
+func (n *networkManager) GetDevices() ([]Device, error) {
 	var devicePaths []dbus.ObjectPath
 
-	n.call(&devicePaths, NetworkManagerGetDevices)
+	err := n.call(&devicePaths, NetworkManagerGetDevices)
+	if err != nil {
+		return nil, err
+	}
 	devices := make([]Device, len(devicePaths))
 
-	var err error
 	for i, path := range devicePaths {
 		devices[i], err = DeviceFactory(path)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 
-	return devices
+	return devices, nil
 }
 
-func (n *networkManager) GetState() NmState {
-	return NmState(n.getUint32Property(NetworkManagerPropertyState))
+func (n *networkManager) GetState() (NmState, error) {
+	r, err := n.getUint32Property(NetworkManagerPropertyState)
+	if err != nil {
+		return NmStateUnknown, err
+	}
+	return NmState(r), nil
 }
 
-func (n *networkManager) GetActiveConnections() []ActiveConnection {
-	acPaths := n.getSliceObjectProperty(NetworkManagerPropertyActiveConnection)
+func (n *networkManager) GetActiveConnections() ([]ActiveConnection, error) {
+	acPaths, err := n.getSliceObjectProperty(NetworkManagerPropertyActiveConnection)
+	if err != nil {
+		return nil, err
+	}
 	ac := make([]ActiveConnection, len(acPaths))
 
-	var err error
 	for i, path := range acPaths {
 		ac[i], err = NewActiveConnection(path)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 
-	return ac
+	return ac, nil
 }
 
-func (n *networkManager) ActivateWirelessConnection(c Connection, d Device, ap AccessPoint) ActiveConnection {
+func (n *networkManager) ActivateWirelessConnection(c Connection, d Device, ap AccessPoint) (ActiveConnection, error) {
 	var opath dbus.ObjectPath
-	n.call(&opath, NetworkManagerActivateConnection, c.GetPath(), d.GetPath(), ap.GetPath())
-	return nil
+	return nil, n.call(&opath, NetworkManagerActivateConnection, c.GetPath(), d.GetPath(), ap.GetPath())
+}
+
+func (n *networkManager) AddAndActivateWirelessConnection(connection map[string]map[string]interface{}, d Device, ap AccessPoint) (ac ActiveConnection, err error) {
+	var opath1 dbus.ObjectPath
+	var opath2 dbus.ObjectPath
+
+	err = n.call2(&opath1, &opath2, NetworkManagerAddAndActivateConnection, connection, d.GetPath(), ap.GetPath())
+	if err != nil {
+		return
+	}
+
+	ac, err = NewActiveConnection(opath2)
+	if err != nil {
+		return
+	}
+	return
 }
 
 func (n *networkManager) AddAndActivateWirelessConnection(connection map[string]map[string]interface{}, d Device, ap AccessPoint) (ac ActiveConnection, err error) {
@@ -138,8 +173,17 @@ func (n *networkManager) Unsubscribe() {
 }
 
 func (n *networkManager) MarshalJSON() ([]byte, error) {
+	NetworkState, err := n.GetState()
+	if err != nil {
+		return nil, err
+	}
+	Devices, err := n.GetDevices()
+	if err != nil {
+		return nil, err
+	}
+
 	return json.Marshal(map[string]interface{}{
-		"NetworkState": n.GetState().String(),
-		"Devices":      n.GetDevices(),
+		"NetworkState": NetworkState.String(),
+		"Devices":      Devices,
 	})
 }
