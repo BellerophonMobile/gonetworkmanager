@@ -30,18 +30,11 @@ func (d *dbusBase) init(iface string, objectPath dbus.ObjectPath) error {
 	return nil
 }
 
-func (d *dbusBase) call(value interface{}, method string, args ...interface{}) {
-	err := d.callError(value, method, args...)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func (d *dbusBase) callError(value interface{}, method string, args ...interface{}) error {
+func (d *dbusBase) call(value interface{}, method string, args ...interface{}) error {
 	return d.obj.Call(method, 0, args...).Store(value)
 }
 
-func (d *dbusBase) callError2(value1 interface{}, value2 interface{}, method string, args ...interface{}) error {
+func (d *dbusBase) call2(value1 interface{}, value2 interface{}, method string, args ...interface{}) error {
 	return d.obj.Call(method, 0, args...).Store(value1, value2)
 }
 
@@ -56,92 +49,92 @@ func (d *dbusBase) subscribeNamespace(namespace string) {
 	d.conn.BusObject().Call(dbusMethodAddMatch, 0, rule)
 }
 
-func (d *dbusBase) getProperty(iface string) interface{} {
+func (d *dbusBase) getProperty(iface string) (interface{}, error) {
 	variant, err := d.obj.GetProperty(iface)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return variant.Value()
+	return variant.Value(), nil
 }
 
-func (d *dbusBase) getObjectProperty(iface string) dbus.ObjectPath {
-	value, ok := d.getProperty(iface).(dbus.ObjectPath)
-	if !ok {
-		panic(makeErrVariantType(iface))
+func (d *dbusBase) getObjectProperty(iface string) (dbus.ObjectPath, error) {
+	value, err := d.getProperty(iface)
+	if err != nil {
+		return "", makeErrVariantType(iface)
 	}
-	return value
+	return value.(dbus.ObjectPath), nil
 }
 
-func (d *dbusBase) getSliceObjectProperty(iface string) []dbus.ObjectPath {
-	value, ok := d.getProperty(iface).([]dbus.ObjectPath)
-	if !ok {
-		panic(makeErrVariantType(iface))
+func (d *dbusBase) getSliceObjectProperty(iface string) ([]dbus.ObjectPath, error) {
+	value, err := d.getProperty(iface)
+	if err != nil {
+		return nil, makeErrVariantType(iface)
 	}
-	return value
+	return value.([]dbus.ObjectPath), nil
 }
 
-func (d *dbusBase) getStringProperty(iface string) string {
-	value, ok := d.getProperty(iface).(string)
-	if !ok {
-		panic(makeErrVariantType(iface))
+func (d *dbusBase) getStringProperty(iface string) (string, error) {
+	value, err := d.getProperty(iface)
+	if err != nil {
+		return "", makeErrVariantType(iface)
 	}
-	return value
+	return value.(string), nil
 }
 
-func (d *dbusBase) getSliceStringProperty(iface string) []string {
-	value, ok := d.getProperty(iface).([]string)
-	if !ok {
-		panic(makeErrVariantType(iface))
+func (d *dbusBase) getSliceStringProperty(iface string) ([]string, error) {
+	value, err := d.getProperty(iface)
+	if err != nil {
+		return nil, makeErrVariantType(iface)
 	}
-	return value
+	return value.([]string), nil
 }
 
-func (d *dbusBase) getMapStringVariantProperty(iface string) map[string]dbus.Variant {
-	value, ok := d.getProperty(iface).(map[string]dbus.Variant)
-	if !ok {
-		panic(makeErrVariantType(iface))
+func (d *dbusBase) getMapStringVariantProperty(iface string) (map[string]dbus.Variant, error) {
+	value, err := d.getProperty(iface)
+	if err != nil {
+		return nil, makeErrVariantType(iface)
 	}
-	return value
+	return value.(map[string]dbus.Variant), nil
 }
 
-func (d *dbusBase) getUint8Property(iface string) uint8 {
-	value, ok := d.getProperty(iface).(uint8)
-	if !ok {
-		panic(makeErrVariantType(iface))
+func (d *dbusBase) getUint8Property(iface string) (uint8, error) {
+	value, err := d.getProperty(iface)
+	if err != nil {
+		return 0, makeErrVariantType(iface)
 	}
-	return value
+	return value.(uint8), nil
 }
 
-func (d *dbusBase) getUint32Property(iface string) uint32 {
-	value, ok := d.getProperty(iface).(uint32)
-	if !ok {
-		panic(makeErrVariantType(iface))
+func (d *dbusBase) getUint32Property(iface string) (uint32, error) {
+	value, err := d.getProperty(iface)
+	if err != nil {
+		return 0, makeErrVariantType(iface)
 	}
-	return value
+	return value.(uint32), nil
 }
 
-func (d *dbusBase) getSliceUint32Property(iface string) []uint32 {
-	value, ok := d.getProperty(iface).([]uint32)
-	if !ok {
-		panic(makeErrVariantType(iface))
+func (d *dbusBase) getSliceUint32Property(iface string) ([]uint32, error) {
+	value, err := d.getProperty(iface)
+	if err != nil {
+		return nil, makeErrVariantType(iface)
 	}
-	return value
+	return value.([]uint32), nil
 }
 
-func (d *dbusBase) getSliceSliceUint32Property(iface string) [][]uint32 {
-	value, ok := d.getProperty(iface).([][]uint32)
-	if !ok {
-		panic(makeErrVariantType(iface))
+func (d *dbusBase) getSliceSliceUint32Property(iface string) ([][]uint32, error) {
+	value, err := d.getProperty(iface)
+	if err != nil {
+		return nil, makeErrVariantType(iface)
 	}
-	return value
+	return value.([][]uint32), nil
 }
 
-func (d *dbusBase) getSliceByteProperty(iface string) []byte {
-	value, ok := d.getProperty(iface).([]byte)
-	if !ok {
-		panic(makeErrVariantType(iface))
+func (d *dbusBase) getSliceByteProperty(iface string) ([]byte, error) {
+	value, err := d.getProperty(iface)
+	if err != nil {
+		return nil, makeErrVariantType(iface)
 	}
-	return value
+	return value.([]byte), nil
 }
 
 func makeErrVariantType(iface string) error {

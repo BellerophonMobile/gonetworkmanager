@@ -24,43 +24,43 @@ const (
 
 type ActiveConnection interface {
 	// GetConnection gets connection object of the connection.
-	GetConnection() Connection
+	GetConnection() (Connection, error)
 
 	// GetSpecificObject gets a specific object associated with the active connection.
-	GetSpecificObject() AccessPoint
+	GetSpecificObject() (AccessPoint, error)
 
 	// GetID gets the ID of the connection.
-	GetID() string
+	GetID() (string, error)
 
 	// GetUUID gets the UUID of the connection.
-	GetUUID() string
+	GetUUID() (string, error)
 
 	// GetType gets the type of the connection.
-	GetType() string
+	GetType() (string, error)
 
 	// GetDevices gets array of device objects which are part of this active connection.
-	GetDevices() []Device
+	GetDevices() ([]Device, error)
 
 	// GetState gets the state of the connection.
-	GetState() uint32
+	GetState() (uint32, error)
 
 	// GetStateFlags gets the state flags of the connection.
-	GetStateFlags() uint32
+	GetStateFlags() (uint32, error)
 
 	// GetDefault gets the default IPv4 flag of the connection.
-	GetDefault() bool
+	GetDefault() (bool, error)
 
 	// GetIP4Config gets the IP4Config of the connection.
-	GetIP4Config() IP4Config
+	GetIP4Config() (IP4Config, error)
 
 	// GetDHCP4Config gets the DHCP4Config of the connection.
-	GetDHCP4Config() DHCP4Config
+	GetDHCP4Config() (DHCP4Config, error)
 
 	// GetVPN gets the VPN flag of the connection.
-	GetVPN() bool
+	GetVPN() (bool, error)
 
 	// GetMaster gets the master device of the connection.
-	GetMaster() Device
+	GetMaster() (Device, error)
 }
 
 func NewActiveConnection(objectPath dbus.ObjectPath) (ActiveConnection, error) {
@@ -72,90 +72,113 @@ type activeConnection struct {
 	dbusBase
 }
 
-func (a *activeConnection) GetConnection() Connection {
-	path := a.getObjectProperty(ActiveConnectionProperyConnection)
+func (a *activeConnection) GetConnection() (Connection, error) {
+	path, err := a.getObjectProperty(ActiveConnectionProperyConnection)
+	if err != nil {
+		return nil, err
+	}
 	con, err := NewConnection(path)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return con
+	return con, nil
 }
 
-func (a *activeConnection) GetSpecificObject() AccessPoint {
-	path := a.getObjectProperty(ActiveConnectionProperySpecificObject)
+func (a *activeConnection) GetSpecificObject() (AccessPoint, error) {
+	path, err := a.getObjectProperty(ActiveConnectionProperySpecificObject)
+	if err != nil {
+		return nil, err
+	}
 	ap, err := NewAccessPoint(path)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return ap
+	return ap, nil
 }
 
-func (a *activeConnection) GetID() string {
+func (a *activeConnection) GetID() (string, error) {
 	return a.getStringProperty(ActiveConnectionProperyID)
 }
 
-func (a *activeConnection) GetUUID() string {
+func (a *activeConnection) GetUUID() (string, error) {
 	return a.getStringProperty(ActiveConnectionProperyUUID)
 }
 
-func (a *activeConnection) GetType() string {
+func (a *activeConnection) GetType() (string, error) {
 	return a.getStringProperty(ActiveConnectionProperyType)
 }
 
-func (a *activeConnection) GetDevices() []Device {
-	paths := a.getSliceObjectProperty(ActiveConnectionProperyDevices)
+func (a *activeConnection) GetDevices() ([]Device, error) {
+	paths, err := a.getSliceObjectProperty(ActiveConnectionProperyDevices)
+	if err != nil {
+		return nil, err
+	}
 	devices := make([]Device, len(paths))
-	var err error
 	for i, path := range paths {
 		devices[i], err = DeviceFactory(path)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
-	return devices
+	return devices, nil
 }
 
-func (a *activeConnection) GetState() uint32 {
+func (a *activeConnection) GetState() (uint32, error) {
 	return a.getUint32Property(ActiveConnectionProperyState)
 }
 
-func (a *activeConnection) GetStateFlags() uint32 {
+func (a *activeConnection) GetStateFlags() (uint32, error) {
 	return a.getUint32Property(ActiveConnectionProperyStateFlags)
 }
 
-func (a *activeConnection) GetDefault() bool {
-	b := a.getProperty(ActiveConnectionProperyDefault)
-	return b.(bool)
+func (a *activeConnection) GetDefault() (bool, error) {
+	b, err := a.getProperty(ActiveConnectionProperyDefault)
+	if err != nil {
+		return false, err
+	}
+	return b.(bool), nil
 }
 
-func (a *activeConnection) GetIP4Config() IP4Config {
-	path := a.getObjectProperty(ActiveConnectionProperyIP4Config)
+func (a *activeConnection) GetIP4Config() (IP4Config, error) {
+	path, err := a.getObjectProperty(ActiveConnectionProperyIP4Config)
+	if err != nil {
+		return nil, err
+	}
 	r, err := NewIP4Config(path)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return r
+	return r, nil
 }
 
-func (a *activeConnection) GetDHCP4Config() DHCP4Config {
-	path := a.getObjectProperty(ActiveConnectionProperyDHCP4Config)
+func (a *activeConnection) GetDHCP4Config() (DHCP4Config, error) {
+	path, err := a.getObjectProperty(ActiveConnectionProperyDHCP4Config)
+	if err != nil {
+		return nil, err
+	}
 	r, err := NewDHCP4Config(path)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return r
+	return r, nil
 }
 
-func (a *activeConnection) GetVPN() bool {
-	ret := a.getProperty(ActiveConnectionProperyVPN)
-	return ret.(bool)
+func (a *activeConnection) GetVPN() (bool, error) {
+	ret, err := a.getProperty(ActiveConnectionProperyVPN)
+	if err != nil {
+		return false, err
+	}
+	return ret.(bool), nil
 }
 
-func (a *activeConnection) GetMaster() Device {
-	path := a.getObjectProperty(ActiveConnectionProperyMaster)
+func (a *activeConnection) GetMaster() (Device, error) {
+	path, err := a.getObjectProperty(ActiveConnectionProperyMaster)
+	if err != nil {
+		return nil, err
+	}
 	r, err := DeviceFactory(path)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return r
+	return r, nil
 }

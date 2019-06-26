@@ -15,10 +15,10 @@ const (
 type Settings interface {
 
 	// ListConnections gets list the saved network connections known to NetworkManager
-	ListConnections() []Connection
+	ListConnections() ([]Connection, error)
 
 	// AddConnection call new connection and save it to disk.
-	AddConnection(settings ConnectionSettings) Connection
+	AddConnection(settings ConnectionSettings) (Connection, error)
 }
 
 func NewSettings() (Settings, error) {
@@ -30,29 +30,34 @@ type settings struct {
 	dbusBase
 }
 
-func (s *settings) ListConnections() []Connection {
+func (s *settings) ListConnections() ([]Connection, error) {
 	var connectionPaths []dbus.ObjectPath
 
-	s.call(&connectionPaths, SettingsListConnections)
+	err := s.call(&connectionPaths, SettingsListConnections)
+	if err != nil {
+		return nil, err
+	}
 	connections := make([]Connection, len(connectionPaths))
 
-	var err error
 	for i, path := range connectionPaths {
 		connections[i], err = NewConnection(path)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 
-	return connections
+	return connections, nil
 }
 
-func (s *settings) AddConnection(settings ConnectionSettings) Connection {
+func (s *settings) AddConnection(settings ConnectionSettings) (Connection, error) {
 	var path dbus.ObjectPath
-	s.call(&path, SettingsAddConnection, settings)
+	err := s.call(&path, SettingsAddConnection, settings)
+	if err != nil {
+		return nil, err
+	}
 	con, err := NewConnection(path)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return con
+	return con, nil
 }
