@@ -38,10 +38,6 @@ func (d *dbusBase) call2(value1 interface{}, value2 interface{}, method string, 
 	return d.obj.Call(method, 0, args...).Store(value1, value2)
 }
 
-func (d *dbusBase) callError2(value1 interface{}, value2 interface{}, method string, args ...interface{}) error {
-	return d.obj.Call(method, 0, args...).Store(value1, value2)
-}
-
 func (d *dbusBase) subscribe(iface, member string) {
 	rule := fmt.Sprintf("type='signal',interface='%s',path='%s',member='%s'",
 		iface, d.obj.Path(), NetworkManagerInterface)
