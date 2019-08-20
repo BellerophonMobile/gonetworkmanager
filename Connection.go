@@ -10,6 +10,8 @@ const (
 	ConnectionInterface = SettingsInterface + ".Connection"
 
 	ConnectionGetSettings = ConnectionInterface + ".GetSettings"
+
+	ConnectionDelete = ConnectionInterface + ".Delete"
 )
 
 //type ConnectionSettings map[string]map[string]interface{}
@@ -23,6 +25,9 @@ type Connection interface {
 	// network, as those are often protected. Secrets must be requested
 	// separately using the GetSecrets() call.
 	GetSettings() ConnectionSettings
+
+	// Delete will delete the connection
+	Delete()
 
 	MarshalJSON() ([]byte, error)
 }
@@ -55,6 +60,10 @@ func (c *connection) GetSettings() ConnectionSettings {
 	}
 
 	return rv
+}
+
+func (c *connection) Delete() {
+	c.call(c.GetPath(), ConnectionDelete)
 }
 
 func (c *connection) MarshalJSON() ([]byte, error) {
