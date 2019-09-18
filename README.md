@@ -1,6 +1,8 @@
 gonetworkmanager
 ================
 
+This repository is archived.  Please use the [Wifx fork](https://github.com/Wifx/gonetworkmanager) instead.
+
 Go D-Bus bindings for NetworkManager.
 
 Currently tested with NetworkManager 0.9.8.10.
